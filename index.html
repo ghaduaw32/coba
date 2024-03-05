@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IP Detector</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>IP Detector</h1>
+        <div class="text_container">
+            <p>
+                <span class="label">IPv4 Address : </span><span id="ipv4Address"></span>
+                <br>
+                <span class="label">IPv6 Address : </span><span id="ipv6Address"></span>
+                <br>
+                <span class="label">ISP : </span><span id="isp"></span>
+                <br>
+                <span class="label">Country : </span><span id="country"></span>
+                <br>
+                <span class="label">City : </span><span id="city"></span>
+                <br>
+                <span class="label">Region : </span><span id="region"></span>
+                <br>
+                <span class="label">Location : </span><span id="loc"></span>
+                <br>
+                <span class="label">Organization : </span><span id="org"></span>
+                <br>
+                <span class="label">Timezone : </span><span id="timezone"></span>
+                <br>
+                <span class="label">ASN : </span><span id="asn"></span>
+                <br>
+                <span class="label">Country call code : </span><span id="codecaling"></span>
+            </p>
+        </div>
+
+        <iframe 
+            id="googleMap"
+            width="400"
+            height="500" 
+            frameborder="0" style="border: 0;"
+            allowfullscreen>
+        </iframe>
+    </div>
+    <script>
+        function getIPAddresses() {
+            // Gunakan Promise.all untuk melakukan fetch secara paralel
+            Promise.all([
+                fetch('https://api64.ipify.org?format=json'),
+                fetch('https://api.ipify.org?format=json')
+            ])
+            .then(responses => Promise.all(responses.map(response => response.json())))
+            .then(data => {
+                var ipv6 = data[0].ip;
+                var ipv4 = data[1].ip;
+                
+                // Fetch data untuk IPv6
+                fetch('https://ipapi.co/' + (ipv6 || '') + '/json')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateInfo(ipv4, ipv6, data);
+                    })
+                    .catch(function (error) {
+                        console.error('Error fetching IPv6 address:', error);
+                        updateInfo(ipv4, 'Not available', {});
+                    });
+
+                // Fetch data untuk IPv4
+                fetch('https://ipapi.co/' + ipv4 + '/json')
+                    .then(response => response.json())
+                    .then(data => {
+                        updateInfo(ipv4, ipv6, data);
+                    })
+                    .catch(function (error) {
+                        console.error('Error fetching IPv4 address:', error);
+                        updateInfo('Not available', ipv6, {});
+                    });
+            })
+            .catch(function (error) {
+                console.error('Error fetching IP addresses:', error);
+                updateInfo('Not available', 'Not available', {});
+            });
+        }
+
+        function updateInfo(ipv4, ipv6, data) {
+            console.log(data);
+            document.getElementById('ipv4Address').textContent = ipv4 || "Not Available";
+            document.getElementById('ipv6Address').textContent = ipv6 || "Not Available";
+            document.getElementById('isp').textContent = data.org || "Not Available";
+            document.getElementById('country').textContent = data.country_name || "Not Available";
+            document.getElementById('city').textContent = data.region || "Not Available";
+            document.getElementById('region').textContent = data.region_code || "Not Available";
+            document.getElementById('loc').textContent = data.latitude + ',' + data.longitude || "Not Available";
+            document.getElementById('org').textContent = data.org || "Not Available";
+            document.getElementById('timezone').textContent = data.timezone || "Not Available";
+            document.getElementById('asn').textContent = data.asn || "Not Available";
+            document.getElementById('codecaling').textContent = data.country_calling_code || "Not Available";
+
+            var iframe = document.getElementById('googleMap');
+            iframe.src = "https://maps.google.com/maps?q=" + (data.latitude || 0) + "," + (data.longitude || 0) + "&output=embed";
+        }
+
+        // Panggil fungsi ini saat DOM telah dimuat
+        document.addEventListener('DOMContentLoaded', getIPAddresses);
+    </script>
+</body>
+</html>
